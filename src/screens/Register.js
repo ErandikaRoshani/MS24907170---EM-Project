@@ -43,7 +43,7 @@ const RegisterScreen = ({navigation}) => {
       Alert.alert('Success', 'User registered successfully!');
       navigation.navigate('Login');
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Registration error');
       Alert.alert('Error', error.message);
     }
   };
