@@ -26,7 +26,7 @@ const LoginScreen = ({navigation}) => {
         navigation.navigate('TabNavigation', {screen: 'Challenge'});
       })
       .catch(error => {
-        Alert.alert('Please enter valid credentials');
+        Alert.alert('Login Error');
       });
   };
 

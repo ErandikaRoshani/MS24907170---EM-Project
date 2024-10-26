@@ -30,15 +30,45 @@ const ChallengeScreen = () => {
   const metersPerMile = 1609.34;
 
   useEffect(() => {
-    // Check the initial connection status
+    const syncOfflineData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const pendingData = await AsyncStorage.getItem('pendingUpdates');
+          if (pendingData) {
+            const { updatedChallenges, updatedGems, updatedLevel } = JSON.parse(pendingData);
+            const userRef = doc(db, 'users', user.uid);
+  
+            // Update Firebase with pending data
+            await updateDoc(userRef, {
+              challenges: updatedChallenges,
+              gems: updatedGems,
+              level: updatedLevel,
+            });
+  
+            // Clear the offline data after successful sync
+            await AsyncStorage.removeItem('pendingUpdates');
+            console.log('Offline data synced successfully');
+          }
+        }
+      } catch (error) {
+        console.error('Error syncing offline data:', error);
+      }
+    };
+  
+    // Listen for network connectivity changes
     const unsubscribe = NetInfo.addEventListener(state => {
+      if (state.isConnected) {
+        syncOfflineData();
+      }
       setIsConnected(state.isConnected);
     });
-
+  
     return () => {
       unsubscribe();
     };
   }, []);
+  
 
   // Request location permission and watch GPS position
   useEffect(() => {
@@ -149,12 +179,16 @@ const ChallengeScreen = () => {
       try {
         const user = auth.currentUser;
         if (user) {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, {
-            challenges: updatedChallenges,
-            gems: updatedGems,
-            level: level,
-          });
+          if (isConnected) {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+              challenges: updatedChallenges,
+              gems: updatedGems,
+              level: level,
+            });
+          } else {
+            await AsyncStorage.setItem('pendingUpdates', JSON.stringify({ updatedChallenges, updatedGems, level }));
+          }
         }
       } catch (error) {
         console.error('Error updating challenge progress:', error);
